@@ -1,68 +1,65 @@
 #!/usr/bin/python3
-"""
-    Prime_game mod
-"""
+""" 0x0A. Prime Game """
 
 
-def isPrime(num):
-    """
-        returns true if it's a prime number or false
-        if not
-    """
-    half_num = num // 2
-    if half_num == 1:
-        return True
-    for i in range(2, half_num + 1):
-        if num % i == 0:
-            return False
-    return True
+def memoize(f):
+    """ Memoization decorator """
+    cache = {}
+
+    def wrapper(*args):
+        """ Memoized function """
+        if args not in cache:
+            cache[args] = f(*args)
+        return cache[args]
+    return wrapper
+
+
+@memoize
+def primeNumbers(n):
+    """ Returns a list of prime numbers up to n """
+    if n < 2:
+        return []
+
+    root = 1
+    primes = [2]
+
+    for number in range(2, n + 1):
+        isPrime = True
+        if root ** 2 < number:
+            root += 1
+
+        for k in range(2, root + 1):
+            if number % k == 0:
+                isPrime = False
+                break
+
+        if isPrime:
+            primes.append(number)
+
+    return primes
 
 
 def isWinner(x, nums):
-    """
-        Takes in number of rounds `x` and a list of numbers
-        to formulate set from to given the winner of all rounds which
-        will be either Maria or Ben
-
-        Args:
-            x: number of rounds
-            nums: array of numbers
-    """
-    current, m_win, b_win = '', 0, 0
-    if not nums:
+    """ Returns the name of the player that won the most rounds """
+    if type(x) is not int or x < 1 or type(nums) is not list:
+        return None
+    if not all([type(num) is int for num in nums]):
         return None
 
-    # cache prime numbers needed to complete prime game
-    prime_list = [num for num in range(2, max(nums)) if isPrime(num)]
+    scores = [0, 0]                 # Maria, Ben
+    all_primes = primeNumbers(max(nums))
 
-    for round in range(x):
-        # maria starts first
-        current = 'Maria'
+    for num in nums[:x]:
+        # get the primes up to the current number
+        turns = 0
+        for prime in all_primes:
+            if prime > num:
+                break
+            turns += 1
+        # the players makes optimal moves, so all the primes are removed
+        winner = (turns + 1) % 2     # winner is the other player
+        scores[winner] += 1
 
-        populate_num = nums[round]
-        if not populate_num:
-            continue
-
-        if populate_num == 1:
-            b_win += 1
-            continue
-
-        while populate_num not in prime_list:
-            populate_num -= 1
-
-        populated_list = prime_list[:prime_list.index(populate_num) + 1]
-
-        for n in populated_list:
-            # next person's turn to pick
-            current = 'Maria' if current == 'Ben' else 'Ben'
-
-        if current == 'Ben':
-            m_win += 1
-        else:
-            b_win += 1
-
-    if b_win > m_win:
-        return 'Ben'
-    if b_win < m_win:
-        return 'Maria'
-    return None
+    if scores[0] == scores[1]:
+        return None
+    return "Maria" if scores[0] > scores[1] else "Ben"
